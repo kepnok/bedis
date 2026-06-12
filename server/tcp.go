@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -29,7 +30,15 @@ func readCommand(conn io.ReadWriter) (*core.BedisCmd, error) {
 	}, nil
 }
 
+func respondErr(err error, conn io.ReadWriter) {
+	conn.Write([]byte(fmt.Sprintf("-%s\r\n", err)))
+}
+
 func respond(cmd *core.BedisCmd, conn io.ReadWriter) error {
+	err := core.EvalAndRespond(cmd, conn)
+	if err != nil {
+		respondErr(err, conn)
+	}
 	return nil
 }
 
