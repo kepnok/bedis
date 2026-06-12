@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"strconv"
 
 	"github.com/kepnok/bedis/config"
 	"github.com/kepnok/bedis/core"
@@ -43,9 +44,9 @@ func respond(cmd *core.BedisCmd, conn io.ReadWriter) error {
 }
 
 func RunServer() {
-	log.Println("Connecting to bedis server on " + config.Host + ":" + string(config.Port))
+	log.Println("Connecting to bedis server on " + config.Host + ":" + strconv.Itoa(config.Port))
 
-	lsnr, err := net.Listen("tcp", config.Host + ":" + string(config.Port))
+	lsnr, err := net.Listen("tcp", config.Host + ":" + strconv.Itoa(config.Port))
 	if err != nil {
 		panic(err)
 	}
