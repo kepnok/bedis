@@ -108,16 +108,62 @@ func evalTTL(args []string, conn io.ReadWriter) error {
 	return nil
 }
 
+func evalDEL(args []string, conn io.ReadWriter) error {
+
+	if len(args) < 1 {
+		return errors.New("(error) ERR wrong number of arguments for 'del' command")
+	}
+
+	countDel := 0
+	for _, key := range args {
+		if ok := Del(key); ok {
+			countDel++;
+		}
+	}
+
+	conn.Write(Encode(countDel, false))
+	return nil
+}
+
+func evalEXPIRE(args []string, conn io.ReadWriter) error {
+
+	if len(args) <= 1 {
+		return errors.New("(error) ERR wrong number of arguments for 'expire' command")
+	}
+
+	key := args[0]
+	exDurationSec, err := strconv.ParseInt(args[1], 10, 64)
+	if err != nil {
+		return errors.New("(error) ERR value is not an integer or out of range")
+	}
+
+	obj := Get(key)
+
+	if obj == nil {
+		conn.Write([]byte(":0\r\n"))
+		return nil
+	}
+
+	obj.ExpiresAt = time.Now().UnixMilli() + exDurationSec * 1000;
+
+	conn.Write([]byte(":1\r\n"))
+	return nil
+}
+
 func EvalAndRespond(cmd *BedisCmd, conn io.ReadWriter) error {
 	switch cmd.Cmd {
-	case "PING":
+	case "PING", "ping":
 		return evalPING(cmd.Args, conn)
-	case "SET":
+	case "SET", "set":
 		return evalSET(cmd.Args, conn)
-	case "GET":
+	case "GET", "get":
 		return evalGET(cmd.Args, conn)
-	case "TTL":
+	case "TTL", "ttl":
 		return evalTTL(cmd.Args, conn)
+	case "DEL", "del":
+		return evalDEL(cmd.Args, conn)
+	case "EXPIRE", "expire":
+		return evalEXPIRE(cmd.Args, conn)
 	default:
 		return evalPING(cmd.Args, conn)
 	}
