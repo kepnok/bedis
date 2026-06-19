@@ -15,7 +15,7 @@ func readLength(data []byte) (int, int) {
 		}
 		length = length*10 + int(b-'0')
 	}
-	
+
 	return 0, 0
 }
 
@@ -111,7 +111,6 @@ func ParseCmd(data []byte) ([]string, error) {
 	return tokens, nil
 }
 
-
 func Decode(data []byte) (interface{}, error) {
 	if len(data) == 0 {
 		return nil, errors.New("No data")
@@ -129,7 +128,9 @@ func Encode(value interface{}, isSimple bool) []byte {
 		} else {
 			return []byte(fmt.Sprintf("$%d\r\n%s\r\n", len(v), v))
 		}
+	case int64:
+		return []byte(fmt.Sprintf(":%d\r\n", v))
+	default:
+		return RESP_NIL
 	}
-
-	return []byte{}
 }

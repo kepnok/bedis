@@ -92,7 +92,7 @@ func RunServer() error {
 	}
 
 	// This registers the server with the epoll instance so that we can monitor it for events
-	if err = syscall.EpollCtl(epollFD, syscall.EPOLL_CTL_ADD, serverFD, &socketServerEvent);  err != nil {
+	if err = syscall.EpollCtl(epollFD, syscall.EPOLL_CTL_ADD, serverFD, &socketServerEvent); err != nil {
 		return err
 	}
 
@@ -102,10 +102,10 @@ func RunServer() error {
 		nevents, e := syscall.EpollWait(epollFD, events[:], -1)
 		if e != nil {
 			continue
-		} 
-		
+		}
+
 		for i := range nevents {
-		
+
 			// if the FD that is triggering is the server itself then that means we have a new connection that is trying to connect to server
 			if events[i].Fd == int32(serverFD) {
 				// accept the connection
@@ -116,13 +116,13 @@ func RunServer() error {
 				}
 
 				// increase the number of clients
-				no_of_clients++;
-				syscall.SetNonblock(int(serverFD), true)
+				no_of_clients++
+				syscall.SetNonblock(int(fd), true)
 
 				// Add the new connection to the monitor list
 				socketClientEvent := syscall.EpollEvent{
 					Events: syscall.EPOLLIN,
-					Fd: 	int32(fd),
+					Fd:     int32(fd),
 				}
 
 				if err = syscall.EpollCtl(epollFD, syscall.EPOLL_CTL_ADD, fd, &socketClientEvent); err != nil {
