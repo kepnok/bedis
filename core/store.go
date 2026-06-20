@@ -25,17 +25,26 @@ func NewObj(value interface{}, durationMs int64) *Obj {
 	}
 }
 
-func Put(key string, obj *Obj) {
-	store[key] = obj
+func Put(k string, obj *Obj) {
+	store[k] = obj
 }
 
-func Get(key string) *Obj {
-	return store[key]
+func Get(k string) *Obj {
+	v := store[k]
+
+	//Here we do a passive delete
+	if v != nil {
+		if v.ExpiresAt != -1 && v.ExpiresAt <= time.Now().UnixMilli() {
+			delete(store, k)
+			return nil
+		}
+	}
+	return v
 }
 
-func Del(key string) bool {
-	if _, ok := store[key]; ok {
-		delete(store, key)
+func Del(k string) bool {
+	if _, ok := store[k]; ok {
+		delete(store, k)
 		return true
 	}
 	return false

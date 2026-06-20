@@ -7,6 +7,7 @@ import (
 	"net"
 	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/kepnok/bedis/config"
 	"github.com/kepnok/bedis/core"
@@ -44,6 +45,8 @@ func respond(cmd *core.BedisCmd, conn io.ReadWriter) error {
 }
 
 var no_of_clients int = 0
+var cronFrequency time.Duration = 1 * time.Second
+var lastCronExecTime time.Time = time.Now()
 
 func RunServer() error {
 	log.Println("Connecting to bedis server on " + config.Host + ":" + strconv.Itoa(config.Port))
@@ -97,6 +100,12 @@ func RunServer() error {
 	}
 
 	for {
+
+		// This is how we auto clean expired in a single treaded event loop. Everytime the conntrol flow reaches this part we do a clean up job if 1 second has passed
+		if time.Now().After(lastCronExecTime.Add(cronFrequency)) {
+			core.DeleteExpiredKeys()
+			lastCronExecTime = time.Now()
+		}
 
 		// Gives the number of FD that are triggering event
 		nevents, e := syscall.EpollWait(epollFD, events[:], -1)
