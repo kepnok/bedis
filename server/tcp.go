@@ -1,11 +1,11 @@
 package server
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"net"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -13,7 +13,16 @@ import (
 	"github.com/kepnok/bedis/core"
 )
 
-func readCommand(conn io.ReadWriter) (*core.BedisCmd, error) {
+func toArrayString(ai []interface{}) ([]string, error) {
+	as := make([]string, len(ai))
+
+	for i := range ai {
+		as[i] = ai[i].(string)
+	}
+	return as, nil
+}
+
+func readCommands(conn io.ReadWriter) (core.BedisCmds, error) {
 	buf := make([]byte, 512)
 
 	n, err := conn.Read(buf[:])
@@ -21,27 +30,29 @@ func readCommand(conn io.ReadWriter) (*core.BedisCmd, error) {
 		return nil, err
 	}
 
-	tokens, err := core.ParseCmd(buf[:n])
+	values, err := core.Decode(buf[:n])
 	if err != nil {
 		return nil, err
 	}
 
-	return &core.BedisCmd{
-		Cmd:  tokens[0],
-		Args: tokens[1:],
-	}, nil
-}
+	cmds := make([]*core.BedisCmd, 0)
+	for _, value := range values {
+		tokens, err := toArrayString(value.([]interface{}))
+		if err != nil {
+			return nil, err
+		}
 
-func respondErr(err error, conn io.ReadWriter) {
-	conn.Write([]byte(fmt.Sprintf("-%s\r\n", err)))
-}
-
-func respond(cmd *core.BedisCmd, conn io.ReadWriter) error {
-	err := core.EvalAndRespond(cmd, conn)
-	if err != nil {
-		respondErr(err, conn)
+		cmds = append(cmds, &core.BedisCmd{
+			Cmd:  strings.ToUpper(tokens[0]),
+			Args: tokens[1:],
+		})
 	}
-	return nil
+
+	return cmds, nil
+}
+
+func respond(cmds core.BedisCmds, conn io.ReadWriter) {
+	core.EvalAndRespond(cmds, conn)
 }
 
 var no_of_clients int = 0
@@ -139,14 +150,14 @@ func RunServer() error {
 				}
 			} else {
 				comm := core.FDcomm{Fd: int(events[i].Fd)}
-				cmd, err := readCommand(comm)
+				cmds, err := readCommands(comm)
 				if err != nil {
 					syscall.Close(int(events[i].Fd))
 					no_of_clients--
 					continue
 				}
 
-				respond(cmd, comm)
+				respond(cmds, comm)
 			}
 		}
 	}
