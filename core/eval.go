@@ -146,6 +146,11 @@ func evalEXPIRE(args []string) []byte {
 	return RESP_ONE
 }
 
+func evalBGWRITEAOF() []byte {
+	go DumpAllAOF()
+	return RESP_OK
+}
+
 func EvalAndRespond(cmds BedisCmds, c io.ReadWriter) {
 	var response []byte
 	buf := bytes.NewBuffer(response)
@@ -164,6 +169,8 @@ func EvalAndRespond(cmds BedisCmds, c io.ReadWriter) {
 			buf.Write(evalDEL(cmd.Args))
 		case "EXPIRE", "expire":
 			buf.Write(evalEXPIRE(cmd.Args))
+		case "BGWRITEAOF", "bgwriteaof":
+			buf.Write(evalBGWRITEAOF())
 		default:
 			buf.Write(evalPING(cmd.Args))
 		}

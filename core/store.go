@@ -1,12 +1,16 @@
 package core
 
 import (
+	"sync"
 	"time"
 
 	"github.com/kepnok/bedis/config"
 )
 
-var store map[string]*Obj
+var (
+	store map[string]*Obj
+	mu sync.Mutex
+)
 
 type Obj struct {
 	Value     interface{}
@@ -30,6 +34,9 @@ func NewObj(value interface{}, durationMs int64) *Obj {
 }
 
 func Put(k string, obj *Obj) {
+	mu.Lock()
+	defer mu.Unlock()
+	
 	if len(store) > config.KeysLimit {
 		evict()
 	}
@@ -42,7 +49,9 @@ func Get(k string) *Obj {
 	//Here we do a passive delete
 	if v != nil {
 		if v.ExpiresAt != -1 && v.ExpiresAt <= time.Now().UnixMilli() {
+			mu.Lock()
 			delete(store, k)
+			mu.Unlock()
 			return nil
 		}
 	}
@@ -51,7 +60,9 @@ func Get(k string) *Obj {
 
 func Del(k string) bool {
 	if _, ok := store[k]; ok {
+		mu.Lock()
 		delete(store, k)
+		mu.Unlock()
 		return true
 	}
 	return false
