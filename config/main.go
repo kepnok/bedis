@@ -2,7 +2,9 @@ package config
 
 var Host string = "0.0.0.0"
 var Port int = 7379
-var KeysLimit int = 5
+var KeysLimit int = 100
 
-var EvictionStratery string = "simple-first"
+var EvictionRatio float64 = 0.40
+
+var EvictionStratery string = "allkeys-random"
 var AOFFile string = "./bedis-main.aof"

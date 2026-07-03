@@ -12,10 +12,28 @@ func evictFirst() {
 	}
 }
 
+func evictAllkeysRandom() {
+	// Randomly evicts keys to make space for new keys.
+
+	numberOfKeys := int64(config.EvictionRatio * float64(config.KeysLimit));
+
+	// Golang iteration of maps are fairly random
+	for k := range store {
+		Del(k)
+		numberOfKeys--
+		if numberOfKeys <= 0 {
+			break
+		}
+	}
+
+}
+
 func evict() {
 	switch config.EvictionStratery {
 	case "simple-string":
 		evictFirst()
+	case "allkeys-random":
+		evictAllkeysRandom()
 	default:
 		evictFirst()
 	}
