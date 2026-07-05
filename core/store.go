@@ -37,6 +37,11 @@ func Put(k string, obj *Obj) {
 		evict()
 	}
 	store[k] = obj
+
+	if KeyStats == nil {
+		KeyStats = make(map[string]int)
+	}
+	UpdateDBStat(KEY_METRIC, len(store))
 }
 
 func Get(k string) *Obj {
@@ -45,9 +50,7 @@ func Get(k string) *Obj {
 	//Here we do a passive delete
 	if v != nil {
 		if v.ExpiresAt != -1 && v.ExpiresAt <= time.Now().UnixMilli() {
-			mu.Lock()
-			delete(store, k)
-			mu.Unlock()
+			Del(k)
 			return nil
 		}
 	}
@@ -59,6 +62,7 @@ func Del(k string) bool {
 		mu.Lock()
 		delete(store, k)
 		mu.Unlock()
+		UpdateDBStat(KEY_METRIC, len(store))
 		return true
 	}
 	return false

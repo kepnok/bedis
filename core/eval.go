@@ -3,6 +3,7 @@ package core
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"strconv"
 	"time"
@@ -179,6 +180,18 @@ func evalINCR(args []string) []byte {
 	return Encode(i, false)	
 }
 
+func evalINFO() []byte {
+	var info []byte
+	buff := bytes.NewBuffer(info)
+
+	buff.WriteString("# Keyspace\r\n")
+	for range KeyStats {
+		buff.WriteString(fmt.Sprintf("db0:keys=%d,expires=0,avg_ttl=0\r\n", KeyStats[KEY_METRIC]))
+	}
+	
+	return Encode(buff.String(), false)
+}
+
 func EvalAndRespond(cmds BedisCmds, c io.ReadWriter) {
 	var response []byte
 	buf := bytes.NewBuffer(response)
@@ -201,6 +214,8 @@ func EvalAndRespond(cmds BedisCmds, c io.ReadWriter) {
 			buf.Write(evalBGWRITEAOF())
 		case "INCR", "incr":
 			buf.Write(evalINCR(cmd.Args))
+		case "INFO", "info":
+			buf.Write(evalINFO())
 		default:
 			buf.Write(evalPING(cmd.Args))
 		}

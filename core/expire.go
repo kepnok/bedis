@@ -14,9 +14,7 @@ func expire() float32 {
 			totalChecks--
 
 			if obj.ExpiresAt <= time.Now().UnixMilli() {
-				mu.Lock()
-				delete(store, key)
-				mu.Unlock()
+				Del(key)
 				totalDeleted++
 			}
 		}	
