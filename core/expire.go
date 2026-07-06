@@ -2,7 +2,6 @@ package core
 
 import (
 	"log"
-	"time"
 )
 
 func expire() float32 {
@@ -10,21 +9,20 @@ func expire() float32 {
 	totalDeleted := 0
 
 	for key, obj := range store {
-		if obj.ExpiresAt != -1 {
-			totalChecks--
 
-			if obj.ExpiresAt <= time.Now().UnixMilli() {
-				Del(key)
-				totalDeleted++
-			}
-		}	
+		totalChecks--
+
+		if hasExpired(obj) {
+			Del(key)
+			totalDeleted++
+		}
 
 		if totalChecks == 0 {
 			break
 		}
 	}
 
-	return float32(totalDeleted)/float32(20)
+	return float32(totalDeleted) / float32(20)
 }
 
 func DeleteExpiredKeys() {

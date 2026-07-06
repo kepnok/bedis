@@ -5,7 +5,9 @@ import "strconv"
 type Obj struct {
 	TypeEncoding uint8
 	Value        interface{}
-	ExpiresAt    int64
+
+	// Keeps track of the time when the object was last accessed at. Redis uses 24 bits to store this value but go doesnt support bitfield so here we are. We can optimize this later by having the first 8 bits contain the type and encoding. But for now it is what it is.
+	LastAccessAt uint32
 }
 
 var (
