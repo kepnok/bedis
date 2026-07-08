@@ -23,7 +23,6 @@ func NewObj(value interface{}, durationMs int64, oType uint8, oEnc uint8) *Obj {
 	obj := &Obj{
 		TypeEncoding: oType | oEnc,
 		Value:        value,
-		LastAccessAt: getCurrentClock(),
 	}
 
 	if durationMs > 0 {
@@ -55,8 +54,11 @@ func Put(k string, obj *Obj) {
 	mu.Lock()
 	defer mu.Unlock()
 	if len(store) > config.KeysLimit {
+		mu.Unlock()
 		evict()
+		mu.Lock()
 	}
+	obj.LastAccessAt = getCurrentClock()
 	store[k] = obj
 
 	if KeyStats == nil {
@@ -80,11 +82,14 @@ func Get(k string) *Obj {
 
 func Del(k string) bool {
 	if obj, ok := store[k]; ok {
+
 		mu.Lock()
 		delete(store, k)
 		delete(expires, obj)
 		mu.Unlock()
+
 		UpdateDBStat(KEY_METRIC, len(store))
+
 		return true
 	}
 	return false
